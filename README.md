@@ -1,3 +1,7 @@
-# aCRUD
+<p align="center">
+  <img src="./logo.png" alt="Logo" width="100"> 
+</p>
 
-This is a platform agnostic CRUD storage system. 
+### aCRUD
+
+A platform agnostic CRUD storage system.
