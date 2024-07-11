@@ -1,2 +1,3 @@
 # aCRUD
-A platform agnostic CRUD interface.
+
+This is a platform agnostic CRUD storage system. 
