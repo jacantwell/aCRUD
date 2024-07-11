@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "acrud"
+version = "0.1.0"
+description = ""
+authors = ["jacantwell <jasper66018@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+dill = "^0.3.8"
+pytest = "^8.2.2"
+typeguard = "^4.3.0"
+boto3 = "^1.34.143"
+
+[tool.poetry.extras]
+s3 = ["boto3"]
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

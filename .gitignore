@@ -1,0 +1,11 @@
+# Poetry
+poetry.lock
+
+# Environment
+.env
+
+# Mac stuff
+.DS_Store
+
+# VS Code
+.vscode/
