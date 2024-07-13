@@ -115,13 +115,16 @@ class S3Storage(Storage):
         Save a dill-pickled object to S3.
         """
 
+        if not path.endswith(".pkl"):
+            raise ValueError("Path must end with '.pkl'")
+
         try:
             buffer = BytesIO()
             dill.dump(obj, buffer)
             buffer.seek(0)
             self.client.put_object(Body=buffer.getvalue(), Bucket=self.bucket, Key=path)
-        except:
-            raise Exception(f"Unable to save pickled object to path {path}")
+        except self.client.exceptions.NoSuchBucket:
+            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
 
     def load_object(self, path: str) -> Any:
         """
