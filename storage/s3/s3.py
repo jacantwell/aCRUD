@@ -131,10 +131,15 @@ class S3Storage(Storage):
         Load a dill-pickled object from S3.
         """
 
+        if not path.endswith(".pkl"):
+            raise ValueError("Path must end with '.pkl'")
+
         try:
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
             return obj
         except self.client.exceptions.NoSuchBucket:
+            self._handle_path_not_found_exception(path)
+        except self.client.exceptions.NoSuchKey:
             self._handle_path_not_found_exception(path)
 
         try:
@@ -142,7 +147,7 @@ class S3Storage(Storage):
             data = BytesIO(data)
             obj = dill.load(data)
         except:
-            raise Exception(f"Unable to un-pickle object {path}")
+            raise Exception(f"Unable to un-pickle object.")
 
     def delete_directory(self, path: str) -> None:
         """
