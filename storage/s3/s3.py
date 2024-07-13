@@ -37,9 +37,11 @@ class S3Storage(Storage):
         try:
             response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=path)
         except self.client.exceptions.NoSuchBucket:
-            raise LookupError(f"s3 bucket `{self.bucket}` not found")
+            raise LookupError(f"Bucket `{self.bucket}` not found")
 
         files = response.get("Contents")
+
+        # In s3 if a directory is empty it does not exist. So we raise an error.
         if files is None:
             self._handle_path_not_found_exception(path)
 
@@ -67,7 +69,7 @@ class S3Storage(Storage):
         try:
             response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=path)
         except self.client.exceptions.NoSuchBucket:
-            raise LookupError(f"s3 bucket `{self.bucket}` not found")
+            raise LookupError(f"Bucket `{self.bucket}` not found")
 
         files = response.get("Contents")
         if files is None:
@@ -89,9 +91,12 @@ class S3Storage(Storage):
         """
         try:
             file_object = bytes(string, "utf-8")
-            self.client.put_object(Body=file_object, Bucket=self.bucket, Key=path)
-        except:
-            raise Exception(f"Unable to save string to your account: {path}")
+            response = self.client.put_object(
+                Body=file_object, Bucket=self.bucket, Key=path
+            )
+        except self.client.exceptions.NoSuchBucket:
+            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
+        print(response)
 
     def load_string(self, path: str) -> str:
         """
