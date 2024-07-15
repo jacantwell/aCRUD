@@ -9,7 +9,7 @@ def test_success():
     config = {"bucket": "test-bucket"}
     storage = S3Storage(config)
     storage.client = Mock()
-    storage.client.list_objects_v2.return_value = {
+    storage.client.put_object.return_value = {
         "ResponseMetadata": {
             "RequestId": "21XR3DRD0Z8TCPS2",
             "HTTPStatusCode": 200,
@@ -17,6 +17,16 @@ def test_success():
         }
     }
     storage.save_object("test-folder/test-file-1.pkl", "test-content")
+
+
+def test_invalid_bucket(no_such_bucket_response):
+    config = {"bucket": "invalid-bucket"}
+    storage = S3Storage(config)
+    storage.client = Mock()
+    storage.client.put_object.side_effect = no_such_bucket_response
+    with pytest.raises(LookupError) as e:
+        storage.save_object("test-folder/test-file-1.pkl", "test-content")
+    assert str(e.value) == "Bucket `invalid-bucket` not found"
 
 
 def test_invalid_path():
