@@ -2,9 +2,10 @@ from typing import Any
 from io import BytesIO
 import os
 
-from typeguard import typechecked
 import boto3
 import dill
+from typeguard import typechecked
+from botocore.exceptions import ClientError
 
 from ..base import Storage
 
@@ -96,7 +97,6 @@ class S3Storage(Storage):
             )
         except self.client.exceptions.NoSuchBucket:
             raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
-        print(response)
 
     def load_string(self, path: str) -> str:
         """
@@ -107,6 +107,8 @@ class S3Storage(Storage):
             string = obj["Body"].read().decode("utf-8")
             return string
         except self.client.exceptions.NoSuchBucket:
+            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
+        except self.client.exceptions.NoSuchKey:
             self._handle_path_not_found_exception(path)
 
     def save_object(self, path: str, obj: Any) -> None:
@@ -114,23 +116,33 @@ class S3Storage(Storage):
         Save a dill-pickled object to S3.
         """
 
+        if not path.endswith(".pkl"):
+            raise ValueError("Path must end with '.pkl'")
+
         try:
             buffer = BytesIO()
             dill.dump(obj, buffer)
             buffer.seek(0)
             self.client.put_object(Body=buffer.getvalue(), Bucket=self.bucket, Key=path)
-        except:
-            raise Exception(f"Unable to save pickled object to path {path}")
+        except self.client.exceptions.NoSuchBucket as e:
+            print(e)
+            raise
+            # raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
 
     def load_object(self, path: str) -> Any:
         """
         Load a dill-pickled object from S3.
         """
 
+        if not path.endswith(".pkl"):
+            raise ValueError("Path must end with '.pkl'")
+
         try:
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
             return obj
         except self.client.exceptions.NoSuchBucket:
+            self._handle_path_not_found_exception(path)
+        except self.client.exceptions.NoSuchKey:
             self._handle_path_not_found_exception(path)
 
         try:
@@ -138,7 +150,7 @@ class S3Storage(Storage):
             data = BytesIO(data)
             obj = dill.load(data)
         except:
-            raise Exception(f"Unable to un-pickle object {path}")
+            raise Exception(f"Unable to un-pickle object.")
 
     def delete_directory(self, path: str) -> None:
         """
@@ -175,51 +187,29 @@ class S3Storage(Storage):
         except:
             return False
 
-    def _generate_presigned_get_url(self, path: str) -> str:
-        """
-        Generate a presigned URL for downloading a file from S3.
-        """
-        try:
-            url = self.client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
-            )
-        except:
-            raise Exception(
-                f"Unable to generate a presigned URL for your account: {path}"
-            )
-        return url
-
-    def _generate_presigned_put_url(self, path: str) -> str:
-        """
-        Generate a presigned URL for downloading a file from S3.
-        """
-
-        try:
-            url = self.client.generate_presigned_url(
-                "put_object",
-                Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
-            )
-        except:
-            raise Exception(
-                f"Unable to generate a presigned URL for your account: {path}"
-            )
-        return url
-
-    def generate_presigned_url(self, path: str, method: str) -> str:
+    def generate_presigned_url(self, path: str, method: str, expiration) -> str:
         """
         Generate a presigned URL for uploading a file to S3.
         """
 
         match method:
             case "GET":
-                url = self._generate_presigned_get_url(path)
+                s3_method = "get_object"
             case "PUT":
-                url = self._generate_presigned_put_url(path)
+                s3_method = "put_object"
             case _:
                 raise ValueError("Method must be either 'GET' or 'PUT'.")
+
+        try:
+            url = self.client.generate_presigned_url(
+                s3_method,
+                Params={"Bucket": self.bucket, "Key": path},
+                ExpiresIn=3600,
+            )
+        except Exception as e:
+            raise Exception(
+                f"Unable to generate a presigned URL for your account: {path}: {e}"
+            )
 
         return url
 
@@ -229,7 +219,9 @@ class S3Storage(Storage):
         path_list = path.split("/")
         for i in range(1, len(path_list) + 1):
             new_path = "/".join(path_list[:i])
-            response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=new_path)
+            response = self.client.list_objects_v2(
+                Bucket=self.bucket, Prefix=new_path + "/"
+            )
             files = response.get("Contents")
             if files is None:
                 raise LookupError(
