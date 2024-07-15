@@ -95,8 +95,11 @@ class S3Storage(Storage):
             response = self.client.put_object(
                 Body=file_object, Bucket=self.bucket, Key=path
             )
-        except self.client.exceptions.NoSuchBucket:
-            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchBucket":
+                raise (f"Unable to save string. Bucket `{self.bucket}` not found")
+            else:
+                raise (f"Unable to save string: {e}")
 
     def load_string(self, path: str) -> str:
         """
@@ -106,10 +109,15 @@ class S3Storage(Storage):
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
             string = obj["Body"].read().decode("utf-8")
             return string
-        except self.client.exceptions.NoSuchBucket:
-            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
-        except self.client.exceptions.NoSuchKey:
-            self._handle_path_not_found_exception(path)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchBucket":
+                raise LookupError(
+                    f"Unable to save string. Bucket `{self.bucket}` not found"
+                )
+            elif e.response["Error"]["Code"] == "NoSuchKey":
+                self._handle_path_not_found_exception(path)
+            else:
+                raise Exception(f"Unable to save string: {e}")
 
     def save_object(self, path: str, obj: Any) -> None:
         """

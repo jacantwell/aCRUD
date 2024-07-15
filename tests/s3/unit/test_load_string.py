@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 from botocore.response import StreamingBody
+from botocore.exceptions import ClientError
 
 from storage.s3 import S3Storage
 
@@ -18,6 +19,30 @@ def string_response():
     return mocked_response
 
 
+@pytest.fixture
+def no_such_bucket_response():
+    error_response = {
+        "Error": {
+            "Code": "NoSuchBucket",
+            "Message": "The specified bucket does not exist",
+        }
+    }
+    operation_name = "GetObject"
+    return ClientError(error_response, operation_name)
+
+
+@pytest.fixture
+def no_such_key_response():
+    error_response = {
+        "Error": {
+            "Code": "NoSuchKey",
+            "Message": "The specified key does not exist",
+        }
+    }
+    operation_name = "GetObject"
+    return ClientError(error_response, operation_name)
+
+
 def test_success(string_response):
     config = {"bucket": "test-bucket"}
     storage = S3Storage(config)
@@ -27,4 +52,25 @@ def test_success(string_response):
     assert data == "a string"
 
 
-# Again, need to figure out how to properly catch and test botocore exceptions
+def test_invalid_bucket(no_such_bucket_response):
+    config = {"bucket": "invalid-bucket"}
+    storage = S3Storage(config)
+    storage.client = Mock()
+    storage.client.get_object.side_effect = no_such_bucket_response
+    with pytest.raises(LookupError) as e:
+        storage.load_string("test-folder/test.csv")
+    assert str(e.value) == "Unable to save string. Bucket `invalid-bucket` not found"
+
+
+def test_invalid_path(no_such_key_response):
+    config = {"bucket": "test-bucket"}
+    storage = S3Storage(config)
+    storage.client = Mock()
+    storage.client.get_object.side_effect = no_such_key_response
+    storage.client.list_objects_v2.return_value = {"Contents": []}
+    with pytest.raises(LookupError) as e:
+        storage.load_string("test-folder/test.csv")
+    assert (
+        str(e.value)
+        == "Unable to find directory `test-folder/test.csv` in your account"
+    )
