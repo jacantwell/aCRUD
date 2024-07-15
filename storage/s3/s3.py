@@ -2,9 +2,10 @@ from typing import Any
 from io import BytesIO
 import os
 
-from typeguard import typechecked
 import boto3
 import dill
+from typeguard import typechecked
+from botocore.exceptions import ClientError
 
 from ..base import Storage
 
@@ -123,8 +124,10 @@ class S3Storage(Storage):
             dill.dump(obj, buffer)
             buffer.seek(0)
             self.client.put_object(Body=buffer.getvalue(), Bucket=self.bucket, Key=path)
-        except self.client.exceptions.NoSuchBucket:
-            raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
+        except self.client.exceptions.NoSuchBucket as e:
+            print(e)
+            raise
+            # raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
 
     def load_object(self, path: str) -> Any:
         """
@@ -184,51 +187,29 @@ class S3Storage(Storage):
         except:
             return False
 
-    def _generate_presigned_get_url(self, path: str) -> str:
-        """
-        Generate a presigned URL for downloading a file from S3.
-        """
-        try:
-            url = self.client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
-            )
-        except:
-            raise Exception(
-                f"Unable to generate a presigned URL for your account: {path}"
-            )
-        return url
-
-    def _generate_presigned_put_url(self, path: str) -> str:
-        """
-        Generate a presigned URL for downloading a file from S3.
-        """
-
-        try:
-            url = self.client.generate_presigned_url(
-                "put_object",
-                Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
-            )
-        except:
-            raise Exception(
-                f"Unable to generate a presigned URL for your account: {path}"
-            )
-        return url
-
-    def generate_presigned_url(self, path: str, method: str) -> str:
+    def generate_presigned_url(self, path: str, method: str, expiration) -> str:
         """
         Generate a presigned URL for uploading a file to S3.
         """
 
         match method:
             case "GET":
-                url = self._generate_presigned_get_url(path)
+                s3_method = "get_object"
             case "PUT":
-                url = self._generate_presigned_put_url(path)
+                s3_method = "put_object"
             case _:
                 raise ValueError("Method must be either 'GET' or 'PUT'.")
+
+        try:
+            url = self.client.generate_presigned_url(
+                s3_method,
+                Params={"Bucket": self.bucket, "Key": path},
+                ExpiresIn=3600,
+            )
+        except Exception as e:
+            raise Exception(
+                f"Unable to generate a presigned URL for your account: {path}: {e}"
+            )
 
         return url
 
