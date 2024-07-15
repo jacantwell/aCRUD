@@ -37,8 +37,8 @@ class S3Storage(Storage):
         """
         try:
             response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=path)
-        except self.client.exceptions.NoSuchBucket:
-            raise LookupError(f"Bucket `{self.bucket}` not found")
+        except ClientError as e:
+            self._handle_boto3_exception(e, path)
 
         files = response.get("Contents")
 
@@ -69,8 +69,8 @@ class S3Storage(Storage):
 
         try:
             response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=path)
-        except self.client.exceptions.NoSuchBucket:
-            raise LookupError(f"Bucket `{self.bucket}` not found")
+        except ClientError as e:
+            self._handle_boto3_exception(e, path)
 
         files = response.get("Contents")
         if files is None:
@@ -96,10 +96,7 @@ class S3Storage(Storage):
                 Body=file_object, Bucket=self.bucket, Key=path
             )
         except ClientError as e:
-            if e.response["Error"]["Code"] == "NoSuchBucket":
-                raise (f"Unable to save string. Bucket `{self.bucket}` not found")
-            else:
-                raise (f"Unable to save string: {e}")
+            self._handle_boto3_exception(e, path)
 
     def load_string(self, path: str) -> str:
         """
@@ -132,10 +129,8 @@ class S3Storage(Storage):
             dill.dump(obj, buffer)
             buffer.seek(0)
             self.client.put_object(Body=buffer.getvalue(), Bucket=self.bucket, Key=path)
-        except self.client.exceptions.NoSuchBucket as e:
-            print(e)
-            raise
-            # raise Exception(f"Unable to save string. Bucket `{self.bucket}` not found")
+        except ClientError as e:
+            self._handle_boto3_exception(e, path)
 
     def load_object(self, path: str) -> Any:
         """
@@ -148,10 +143,8 @@ class S3Storage(Storage):
         try:
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
             return obj
-        except self.client.exceptions.NoSuchBucket:
-            self._handle_path_not_found_exception(path)
-        except self.client.exceptions.NoSuchKey:
-            self._handle_path_not_found_exception(path)
+        except ClientError as e:
+            self._handle_boto3_exception(e, path)
 
         try:
             data = obj["Body"].read()
@@ -168,8 +161,8 @@ class S3Storage(Storage):
             paginator = self.client.get_paginator("list_objects_v2")
             pages = paginator.paginate(Bucket=self.bucket, Prefix=path)
 
-        except self.client.exceptions.NoSuchBucket:
-            self._handle_path_not_found_exception(path)
+        except ClientError as e:
+            self._handle_boto3_exception(e, path)
 
         delete_us = dict(Objects=[])
         for item in pages.search("Contents"):
@@ -222,7 +215,6 @@ class S3Storage(Storage):
         return url
 
     def _handle_path_not_found_exception(self, path):
-
         # In order to return a nice error message we iterate over the path and find which directory is missing
         path_list = path.split("/")
         for i in range(1, len(path_list) + 1):
@@ -236,3 +228,12 @@ class S3Storage(Storage):
                     f"Unable to find directory `{new_path}` in your account"
                 )
         raise LookupError(f"Unable to find directory `{path}` in your account")
+
+    def _handle_boto3_exception(self, error, path):
+
+        if error.response["Error"]["Code"] == "NoSuchBucket":
+            raise LookupError(f"Bucket `{self.bucket}` not found")
+        elif error.response["Error"]["Code"] == "NoSuchKey":
+            self._handle_path_not_found_exception(path)
+        else:
+            raise Exception(error)
