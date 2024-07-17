@@ -142,7 +142,6 @@ class S3Storage(Storage):
 
         try:
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
-            return obj
         except ClientError as e:
             self._handle_boto3_exception(e, path)
 
@@ -152,6 +151,8 @@ class S3Storage(Storage):
             obj = dill.load(data)
         except Exception:
             raise Exception(f"Unable to un-pickle object.")
+
+        return obj
 
     def delete_directory(self, path: str) -> None:
         """
