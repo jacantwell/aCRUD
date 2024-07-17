@@ -150,7 +150,7 @@ class S3Storage(Storage):
             data = obj["Body"].read()
             data = BytesIO(data)
             obj = dill.load(data)
-        except:
+        except Exception:
             raise Exception(f"Unable to un-pickle object.")
 
     def delete_directory(self, path: str) -> None:
@@ -185,7 +185,7 @@ class S3Storage(Storage):
         try:
             self.client.head_object(Bucket=self.bucket, Key=path)
             return True
-        except:
+        except ClientError as e:
             return False
 
     def generate_presigned_url(self, path: str, method: str, expiration) -> str:
