@@ -24,12 +24,12 @@ class S3Storage(Storage):
     def serialize(self) -> dict:
         return {"storage_type": self.__class__.__name__, "bucket": self.bucket}
 
-    def ping(self) -> bool:
+    def ping(self) -> dict:
         try:
             self.client.head_bucket(Bucket=self.bucket)
-            return True
-        except:
-            return False
+            return {"response": "pong"}
+        except ClientError as e:
+            self._handle_boto3_exception(e, "")
 
     def list_files_in_directory(self, path: str) -> list:
         """
