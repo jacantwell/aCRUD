@@ -20,11 +20,12 @@ class LocalStorage(Storage):
         path = os.path.join(self.root_dir, path)
         try:
             files = os.listdir(path)
-        except:
-            raise LookupError(f"Unable to list files in your account: {path}")
+        except FileNotFoundError:
+            self._handle_path_not_found_exception(path)
 
         files = ["".join(file.split("/")[-1].split(".")[:-1]) for file in files]
         files = list(set(files))
+        return files
 
     def list_subdirectories_in_directory(self, path: str) -> list:
         path = os.path.join(self.root_dir, path)
@@ -33,7 +34,7 @@ class LocalStorage(Storage):
             # Filter out entries that start with a dot
             files = [file for file in files if not file.startswith(".")]
         except:
-            raise LookupError(f"Unable to list directories in your account: {path}")
+            self._handle_path_not_found_exception(path)
         return files
 
     def save_string(self, path: str, content: str) -> None:
@@ -87,3 +88,14 @@ class LocalStorage(Storage):
     def check_file_exists(self, path: str) -> bool:
         path = os.path.join(self.root_dir, path)
         return os.path.isfile(path)
+
+    def _handle_path_not_found_exception(self, path):
+        # In order to return a nice error message we iterate over the path and find which directory is missing
+        path_list = path.split("/")
+        for i in range(1, len(path_list) + 1):
+            new_path = "/".join(path_list[:i])
+            if not os.path.exists(new_path):
+                raise LookupError(
+                    f"Unable to find directory `{new_path}` on your local filesystem"
+                )
+        raise LookupError(f"Unable to find directory `{path}` on your local filesystem")
