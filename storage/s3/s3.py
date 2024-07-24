@@ -13,7 +13,7 @@ from ..base import Storage
 @typechecked
 class S3Storage(Storage):
     """
-    A storage class that uses s3 as a storage backend.
+    A storage class that uses s3 as a backend.
     To use this class you must have your aws credentials configured.
     """
 
@@ -29,7 +29,7 @@ class S3Storage(Storage):
             self.client.head_bucket(Bucket=self.bucket)
             return {"response": "pong"}
         except ClientError as e:
-            self._handle_boto3_exception(e, "")
+            self._handle_boto3_exception(e)
 
     def list_files_in_directory(self, path: str) -> list:
         """
@@ -92,9 +92,7 @@ class S3Storage(Storage):
         """
         try:
             file_object = bytes(string, "utf-8")
-            response = self.client.put_object(
-                Body=file_object, Bucket=self.bucket, Key=path
-            )
+            self.client.put_object(Body=file_object, Bucket=self.bucket, Key=path)
         except ClientError as e:
             self._handle_boto3_exception(e, path)
 
@@ -189,7 +187,9 @@ class S3Storage(Storage):
         except ClientError as e:
             return False
 
-    def generate_presigned_url(self, path: str, method: str, expiration) -> str:
+    def generate_presigned_url(
+        self, path: str, method: str, expiration: int = 3600
+    ) -> str:
         """
         Generate a presigned URL for uploading a file to S3.
         """
@@ -206,7 +206,7 @@ class S3Storage(Storage):
             url = self.client.generate_presigned_url(
                 s3_method,
                 Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
+                ExpiresIn=expiration,
             )
         except Exception as e:
             raise Exception(
@@ -215,7 +215,7 @@ class S3Storage(Storage):
 
         return url
 
-    def _handle_path_not_found_exception(self, path):
+    def _handle_path_not_found_exception(self, path: str = "") -> None:
         # In order to return a nice error message we iterate over the path and find which directory is missing
         path_list = path.split("/")
         for i in range(1, len(path_list) + 1):
@@ -230,7 +230,7 @@ class S3Storage(Storage):
                 )
         raise LookupError(f"Unable to find directory `{path}` in your account")
 
-    def _handle_boto3_exception(self, error, path):
+    def _handle_boto3_exception(self, error: ClientError, path: str = "") -> None:
 
         if error.response["Error"]["Code"] == "NoSuchBucket":
             raise LookupError(f"Bucket `{self.bucket}` not found")
