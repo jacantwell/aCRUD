@@ -13,7 +13,7 @@ from ..base import Storage
 @typechecked
 class S3Storage(Storage):
     """
-    A storage class that uses s3 as a storage backend.
+    A storage class that uses s3 as a backend.
     To use this class you must have your aws credentials configured.
     """
 
@@ -24,12 +24,12 @@ class S3Storage(Storage):
     def serialize(self) -> dict:
         return {"storage_type": self.__class__.__name__, "bucket": self.bucket}
 
-    def ping(self) -> bool:
+    def ping(self) -> dict:
         try:
             self.client.head_bucket(Bucket=self.bucket)
-            return True
-        except:
-            return False
+            return {"response": "pong"}
+        except ClientError as e:
+            self._handle_boto3_exception(e)
 
     def list_files_in_directory(self, path: str) -> list:
         """
@@ -92,9 +92,7 @@ class S3Storage(Storage):
         """
         try:
             file_object = bytes(string, "utf-8")
-            response = self.client.put_object(
-                Body=file_object, Bucket=self.bucket, Key=path
-            )
+            self.client.put_object(Body=file_object, Bucket=self.bucket, Key=path)
         except ClientError as e:
             self._handle_boto3_exception(e, path)
 
@@ -142,7 +140,6 @@ class S3Storage(Storage):
 
         try:
             obj = self.client.get_object(Bucket=self.bucket, Key=path)
-            return obj
         except ClientError as e:
             self._handle_boto3_exception(e, path)
 
@@ -150,8 +147,10 @@ class S3Storage(Storage):
             data = obj["Body"].read()
             data = BytesIO(data)
             obj = dill.load(data)
-        except:
+        except Exception:
             raise Exception(f"Unable to un-pickle object.")
+
+        return obj
 
     def delete_directory(self, path: str) -> None:
         """
@@ -185,10 +184,12 @@ class S3Storage(Storage):
         try:
             self.client.head_object(Bucket=self.bucket, Key=path)
             return True
-        except:
+        except ClientError as e:
             return False
 
-    def generate_presigned_url(self, path: str, method: str, expiration) -> str:
+    def generate_presigned_url(
+        self, path: str, method: str, expiration: int = 3600
+    ) -> str:
         """
         Generate a presigned URL for uploading a file to S3.
         """
@@ -205,7 +206,7 @@ class S3Storage(Storage):
             url = self.client.generate_presigned_url(
                 s3_method,
                 Params={"Bucket": self.bucket, "Key": path},
-                ExpiresIn=3600,
+                ExpiresIn=expiration,
             )
         except Exception as e:
             raise Exception(
@@ -214,7 +215,7 @@ class S3Storage(Storage):
 
         return url
 
-    def _handle_path_not_found_exception(self, path):
+    def _handle_path_not_found_exception(self, path: str = "") -> None:
         # In order to return a nice error message we iterate over the path and find which directory is missing
         path_list = path.split("/")
         for i in range(1, len(path_list) + 1):
@@ -229,7 +230,7 @@ class S3Storage(Storage):
                 )
         raise LookupError(f"Unable to find directory `{path}` in your account")
 
-    def _handle_boto3_exception(self, error, path):
+    def _handle_boto3_exception(self, error: ClientError, path: str = "") -> None:
 
         if error.response["Error"]["Code"] == "NoSuchBucket":
             raise LookupError(f"Bucket `{self.bucket}` not found")

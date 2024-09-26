@@ -19,6 +19,16 @@ def test_success():
     assert "test-file-1" in files
 
 
+def test_invalid_bucket(no_such_bucket_response):
+    config = {"bucket": "invalid-bucket"}
+    storage = S3Storage(config)
+    storage.client = Mock()
+    storage.client.list_objects_v2.side_effect = no_such_bucket_response
+    with pytest.raises(LookupError) as e:
+        storage.list_files_in_directory("test-folder")
+    assert str(e.value) == "Bucket `invalid-bucket` not found"
+
+
 def test_invalid_directory():
     config = {"bucket": "test-bucket"}
     storage = S3Storage(config)
