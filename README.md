@@ -3,7 +3,7 @@
 </p>
 
 
-### aCRUD
+# aCRUD
 
 ## Motivation
 
@@ -11,21 +11,19 @@ The goal of this project is to create a platform agnostic CRUD storage system. T
 
 ## Implementation
 
-aCrud is implemented as a python package. The package is split into two main parts:
-
-# Storage Interface
+#### Storage Interface
 
 Found in the `acrud/schema` directory. This is the interface that all storage systems must implement. This defines the `Files` that can be accepted by the storage system. The `File` class is a base class that all files must inherit from. This class contains the `file_path`, `data` and `meta_data` that will be written to the storage system. The `data` can be any of the supported types (these can currently be found in `settings.py`).
 
-# Storage System
+#### Storage System
 
 Found in the `acrud/storage` directory. This is the actual implementation of the storage system. This is where the `File` is written to the storage system. The `Storage` class is the base class that all storage systems must inherit from. This class contains the `create_file` method that must be implemented by the storage system. This method takes in a `File` object and writes the `data` to the storage system. `data` is always converted to a binary file object before being written to the storage system. This is done via the `convert` function which is multi dispatched for different supported type conversions.
 
 Storage systems can be instantiated by passing a `StorageConfig` to the `storage_factory` function. This configuration information is used to create a connection to the selected storage system. For example, the `S3Storage` class requires a `S3StorageConfig` object to be passed to the `storage_factory` function. This object contains the `bucket` which is required to create a connection to the S3 storage system.
 
-A platform agnostic CRUD storage system.
 
-## TODO
+
+#### TODO
 
 - [ ] Implement more graceful error handling.
 - [ ] Add support for Microsoft Sharepoint.
