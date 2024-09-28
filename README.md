@@ -22,7 +22,6 @@ Found in the `acrud/storage` directory. This is the actual implementation of the
 Storage systems can be instantiated by passing a `StorageConfig` to the `storage_factory` function. This configuration information is used to create a connection to the selected storage system. For example, the `S3Storage` class requires a `S3StorageConfig` object to be passed to the `storage_factory` function. This object contains the `bucket` which is required to create a connection to the S3 storage system.
 
 
-
 #### TODO
 
 - [ ] Implement more graceful error handling.
@@ -30,3 +29,7 @@ Storage systems can be instantiated by passing a `StorageConfig` to the `storage
 - [ ] Add support for Google Drive.
 - [ ] Add unit tests.
 - [ ] Add logging.
+
+##### Note
+
+Original version of this package can be found on the branch `v0.1.0`.
