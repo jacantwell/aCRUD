@@ -1,101 +1,113 @@
-from io import BytesIO
-from typing import Any
-import dill
+from typing import NoReturn
 import os
 
+
 from ..base import Storage
+from ..convert import convert, get_type
+from ...schema import LocalGetFile, LocalPostFile, LocalStorageConfig
 
 
 class LocalStorage(Storage):
-    def __init__(self, config: dict) -> None:
-        self.root_dir = config["root_dir"]
+    """
+    A CRUD interface for local storage.
+    """
 
-    def serialize(self) -> dict:
-        return {"storage_type": self.__class__.__name__, "root_dir": self.root_dir}
+    def __init__(self, config: LocalStorageConfig) -> None:
+        self.root_dir = config.root_dir
 
-    def ping(self) -> bool:
-        return True
+    def ping(self) -> dict:
+        return {"response": "pong"}
 
-    def list_files_in_directory(self, path: str) -> list:
+    def create_file(self, file: LocalPostFile) -> LocalPostFile:
+
+        file_path = os.path.join(self.root_dir, file.file_path)
+
+        folder = "/".join(file_path.split("/")[:-1])
+
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        # Save the data
+        data = convert(file.data, bytes)
+        with open(file_path, "wb") as f:
+            f.write(data)
+
+        # Save the metadata
+        if file.meta_data is not None:
+            file_name = file_path.split("/")[-1]
+            meta_data_file_path = file_path.replace(file_name, "") + "meta.json"
+            meta_data = convert(file.meta_data, bytes)
+            with open(meta_data_file_path, "wb") as f:
+                f.write(meta_data)
+
+        return file
+
+    def read_file(self, file: LocalGetFile) -> LocalPostFile:
+
+        file_path = os.path.join(self.root_dir, file.file_path)
+
+        # Get the data
+        with open(file_path, "rb") as f:
+            obj = f.read()
+            print(obj)
+
+        data = convert(obj, get_type(file.file_path))  # Converts file data
+
+        # Get the metadata
+        meta_data_file_path = (
+            file_path.replace(file_path.split("/")[-1], "") + "meta.json"
+        )
+
+        if os.path.exists(meta_data_file_path):
+            with open(meta_data_file_path, "rb") as f:
+                obj = f.read()
+            meta_data = convert(obj, dict)
+        else:
+            meta_data = None
+
+        # Create the file object
+        file = LocalPostFile(file_path=file.file_path, data=data, meta_data=meta_data)
+
+        return file
+
+    def update_file(self, file: LocalPostFile) -> LocalPostFile:
+
+        # In Local we simply overwrite the file
+        self.create_file(file)
+
+        return file
+
+    def delete_file(self, file_path: str) -> NoReturn:
+
+        full_file_path = os.path.join(self.root_dir, file_path)
+
+        # Delete the data
+        if os.path.exists(full_file_path):
+            os.remove(full_file_path)
+        else:
+            raise FileNotFoundError(f"File not found: {full_file_path}")
+
+        # Delete the metadata
+        full_file_path = full_file_path.split("/")[-1]
+        meta_data_file_path = file_path.replace(full_file_path, "") + "meta.json"
+        if os.path.exists(meta_data_file_path):
+            os.remove(meta_data_file_path)
+
+    def list_files_in_directory(self, file_path: str) -> list:
         path = os.path.join(self.root_dir, path)
-        try:
-            files = os.listdir(path)
-        except FileNotFoundError:
-            self._handle_path_not_found_exception(path)
+
+        files = os.listdir(path)
 
         files = ["".join(file.split("/")[-1].split(".")[:-1]) for file in files]
         files = list(set(files))
         return files
 
-    def list_subdirectories_in_directory(self, path: str) -> list:
+    def list_subdirectories_in_directory(self, file_path) -> list:
+
         path = os.path.join(self.root_dir, path)
-        try:
-            files = os.listdir(path)
-            # Filter out entries that start with a dot
-            files = [file for file in files if not file.startswith(".")]
-        except:
-            self._handle_path_not_found_exception(path)
+        files = os.listdir(path)
+
+        # Filter out entries that start with a dot
+        files = [file for file in files if not file.startswith(".")]
+
         return files
-
-    def save_string(self, path: str, content: str) -> None:
-        path = os.path.join(self.root_dir, path)
-
-        folder = "/".join(path.split("/")[:-1])
-        print("\n\n folder", folder)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        with open(path, "w") as file:
-            file.write(content)
-
-    def load_string(self, path: str) -> str:
-        path = os.path.join(self.root_dir, path)
-        with open(path, "r") as file:
-            return file.read()
-
-    def save_object(self, path: str, obj: Any) -> None:
-        path = os.path.join(self.root_dir, path)
-
-        folder = "/".join(path.split("/")[:-1])
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        try:
-            buffer = BytesIO()
-            dill.dump(obj, buffer)
-            buffer.seek(0)
-        except:
-            raise ValueError(f"Unable to serialize object: {obj}")
-
-        with open(path, "wb") as file:
-            file.write(buffer.read())
-
-    def load_object(self, path: str) -> Any:
-        path = os.path.join(self.root_dir, path)
-        with open(path, "rb") as file:
-            return dill.load(file)
-
-    def delete_directory(self, path: str) -> None:
-
-        # This needs fixing - currently doesnt delete everything in the directory
-
-        path = os.path.join(self.root_dir, path)
-        try:
-            os.rmdir(path)
-        except:
-            raise ValueError(f"Unable to delete directory: {path}")
-
-    def check_file_exists(self, path: str) -> bool:
-        path = os.path.join(self.root_dir, path)
-        return os.path.isfile(path)
-
-    def _handle_path_not_found_exception(self, path):
-        # In order to return a nice error message we iterate over the path and find which directory is missing
-        path_list = path.split("/")
-        for i in range(1, len(path_list) + 1):
-            new_path = "/".join(path_list[:i])
-            if not os.path.exists(new_path):
-                raise LookupError(
-                    f"Unable to find directory `{new_path}` on your local filesystem"
-                )
-        raise LookupError(f"Unable to find directory `{path}` on your local filesystem")

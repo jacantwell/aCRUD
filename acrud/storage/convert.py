@@ -23,7 +23,8 @@ if SUPPORTS_PICKLE:
 """Helper function for converting str to types"""
 
 
-def get_type(file_type: str) -> Type:
+def get_type(file_path: str) -> Type:
+    file_type = file_path.split(".")[-1]
     match file_type:
         case "txt":
             return str

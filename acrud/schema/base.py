@@ -1,5 +1,5 @@
-from abc import ABC
-from typing import Any
+from typing import Any, Optional
+
 from pydantic import BaseModel
 
 
@@ -10,7 +10,7 @@ class StorageConfig(BaseModel):
 class PostFile(BaseModel):
     file_path: str
     data: Any
-    meta_data: dict
+    meta_data: Optional[dict] = None
 
 
 class GetFile(BaseModel):

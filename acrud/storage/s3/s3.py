@@ -59,7 +59,7 @@ class S3Storage(Storage):
         if obj is not None:
             meta_data = convert(obj.read(), dict)
         else:
-            meta_data = {}
+            meta_data = None
 
         # Create the file object
         file = S3PostFile(file_path=file.file_path, data=data, meta_data=meta_data)
