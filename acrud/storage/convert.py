@@ -13,8 +13,10 @@ from ..settings import (
     SUPPORTS_UPLOADFILE,
 )
 
+# Conditional imports dependent on supported file types
 if SUPPORTS_UPLOADFILE:
-    from fastapi import UploadFile
+    # from fastapi import UploadFile
+    pass
 if SUPPORTS_JSON:
     import json
 if SUPPORTS_PICKLE:
@@ -34,8 +36,8 @@ def get_type(file_path: str) -> Type:
             return dict
         case "pickle":
             return object
-        case "uploadfile":
-            return UploadFile
+        # case "uploadfile":
+        #     return UploadFile
 
 
 # Define the `convert` function that will handle conversions to bytes
@@ -52,14 +54,12 @@ if SUPPORTS_CSV:
     @convert.register
     def _(data: str, return_type: Type[bytes]):
         # Convert CSV (string) to bytes
-        print("Converting str to bytes")
         return data.encode("utf-8")
 
     # Conversion from bytes
     @convert.register
     def _(data: bytes, return_type: Type[str]):
         # Convert bytes to CSV (string)
-        print("Converting bytes to str")
         return data.decode("utf-8")
 
 
@@ -68,13 +68,11 @@ if SUPPORTS_JSON:
     @convert.register
     def _(data: dict, return_type: Type[bytes]):
         # Convert JSON (dict) to bytes
-        print("Converting JSON to bytes")
         return json.dumps(data).encode("utf-8")
 
     @convert.register
     def _(data: bytes, return_type: Type[dict]):
         # Convert bytes to JSON (dict)
-        print("Converting bytes to JSON")
         return json.loads(data.decode("utf-8"))
 
 
@@ -83,27 +81,25 @@ if SUPPORTS_PICKLE:
     @convert.register
     def _(data: bytes, return_type: Type[object]):
         # Pickle is already in bytes, return as is
-        print("Converting bytes to object")
         return data
 
     @convert.register
     def _(data: object, return_type: Type[bytes]):
         # Convert object to bytes using pickle
-        print("Converting object to bytes")
         buffer = BytesIO()
         dill.dump(data, buffer)
         buffer.seek(0)
         return buffer.getvalue()
 
 
-if SUPPORTS_UPLOADFILE:
+# if SUPPORTS_UPLOADFILE:
 
-    @convert.register
-    def _(data: UploadFile, return_type: Type[bytes]):
-        # Read bytes from FastAPI's UploadFile object
-        return data.file.read()
+#     @convert.register
+#     def _(data: UploadFile, return_type: Type[bytes]):
+#         # Read bytes from FastAPI's UploadFile object
+#         return data.file.read()
 
-    @convert.register
-    def _(data: bytes, return_type: Type[UploadFile]):
-        # Convert bytes to FastAPI's UploadFile object
-        return UploadFile(data)
+#     @convert.register
+#     def _(data: bytes, return_type: Type[UploadFile]):
+#         # Convert bytes to FastAPI's UploadFile object
+#         return UploadFile(data)

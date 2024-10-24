@@ -1,6 +1,6 @@
-from .s3 import S3GetFile, S3PostFile, S3StorageConfig
-from .local import LocalGetFile, LocalPostFile, LocalStorageConfig
-from .base import StorageConfig, PostFile, GetFile
+from .s3 import S3StorageConfig
+from .local import LocalStorageConfig
+from .base import StorageConfig
 
 
 def storage_config_factory(

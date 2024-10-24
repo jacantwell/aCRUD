@@ -1,35 +1,30 @@
-from acrud import storage_factory, storage_config_factory
-from acrud.schema import LocalPostFile, LocalGetFile
+from acrud import storage
 
 # Create a storage config
 params = {"root_dir": "/Users/jaspercantwell/repos/aCRUD/test_data"}
 
-config = storage_config_factory(storage_type="LocalStorage", params=params)
+# config = storage_config_factory(storage_type="LocalStorage", params=params)
 
-# Create a storage object
-storage = storage_factory(config)
+# # Create a storage object
+# storage = storage_factory(config)
 
 # Ping the storage
 response = storage.ping()
 
-print(response)
-
 # Create a file
 file = {
-    "file_path": "test_data.txt",
+    "file_path": "real_f/test_data.txt",
     "data": "Hello, World!",
     "meta_data": {"author": "Jasper Cantwell"},
 }
 
-file = LocalPostFile(**file)
-
-file = storage.create_file(file)
+file = storage.create_file(file["file_path"], file["data"], file["meta_data"])
 
 # Read the file
-file = {"file_path": "test_data.txt"}
 
-file = LocalGetFile(**file)
+file = {"file_path": "real_f/test_data.txt"}
 
-file = storage.read_file(file)
+print("Reading file")
+file = storage.read_file(file["file_path"])
 
-print(file.dict())
+# print(file.dict())
