@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 
 from ..base import StorageBase
 from ..convert import convert, get_type
+from .. import utils
 
 
 class S3Storage(StorageBase):
@@ -48,8 +49,7 @@ class S3Storage(StorageBase):
 
         # Save the metadata
         if meta_data is not None:
-            file_name = file_path.split("/")[-1]
-            meta_data_file_path = file_path.replace(file_name, "") + "meta.json"
+            meta_data_file_path = utils.get_meta_data_file_path(file_path)
             meta_data = convert(meta_data, bytes)
             self.client.put_object(
                 Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
@@ -74,9 +74,7 @@ class S3Storage(StorageBase):
         data = convert(obj, get_type(file_path))  # Converts file data
 
         # Get the metadata
-        meta_data_file_path = (
-            file_path.replace(file_path.split("/")[-1], "") + "meta.json"
-        )
+        meta_data_file_path = utils.get_meta_data_file_path(file_path)
         obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
         meta_data = obj["Body"]
 
