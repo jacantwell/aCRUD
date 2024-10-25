@@ -3,8 +3,7 @@ from typing import Any, Dict, Optional
 import configparser
 from importlib import import_module
 
-# from acrud.storage import local
-import_module("acrud.storage.local", package="acrud.storage")
+from acrud.storage.base import StorageBase
 
 
 class StorageConfig:
@@ -16,19 +15,13 @@ class StorageConfig:
 
 class StorageFactory:
     @staticmethod
-    def create_storage(config: StorageConfig):
+    def create_storage(config: StorageConfig) -> StorageBase:
         storage_type = config.storage_type.lower()
         package = "acrud.storage"
-
-        print("\n storage type", storage_type, "\n")
-
+        # Dynamically import the appropriate storage module
         try:
-            # Dynamically import the appropriate storage module
             module = import_module(package + "." + storage_type, package)
-
-            name = f"{storage_type.capitalize()}Storage"
-
-            storage_class = getattr(module, name)
+            storage_class = getattr(module, f"{storage_type.capitalize()}Storage")
             return storage_class(config)
         except (ImportError, AttributeError) as e:
             raise ValueError(f"Unsupported storage type: {config.storage_type}") from e

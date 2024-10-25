@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Any
 from ..base import StorageBase
 from ..convert import convert, get_type
 from ...exception import lookup_handler
+from .. import utils
 
 
 class LocalStorage(StorageBase):
@@ -49,8 +50,7 @@ class LocalStorage(StorageBase):
 
         # Save the metadata
         if meta_data is not None:
-            file_name = file_path.split("/")[-1]
-            meta_data_file_path = file_path.replace(file_name, "") + "meta.json"
+            meta_data_file_path = utils.get_meta_data_file_path(file_path)
             meta_data = convert(meta_data, bytes)
             with open(meta_data_file_path, "wb") as f:
                 f.write(meta_data)
@@ -77,11 +77,8 @@ class LocalStorage(StorageBase):
 
         data = convert(obj, get_type(file_path))  # Converts file data
 
-        # Get the metadata
-        meta_data_file_path = (
-            file_path.replace(file_path.split("/")[-1], "") + "meta.json"
-        )
-
+        # If a metadata file exists, read it
+        meta_data_file_path = utils.get_meta_data_file_path(file_path)
         if os.path.exists(meta_data_file_path):
             with open(meta_data_file_path, "rb") as f:
                 obj = f.read()
@@ -121,8 +118,7 @@ class LocalStorage(StorageBase):
             lookup_handler(self, file_path)
 
         # Delete the metadata
-        full_file_path = full_file_path.split("/")[-1]
-        meta_data_file_path = file_path.replace(full_file_path, "") + "meta.json"
+        meta_data_file_path = utils.get_meta_data_file_path(full_file_path)
         if os.path.exists(meta_data_file_path):
             os.remove(meta_data_file_path)
 

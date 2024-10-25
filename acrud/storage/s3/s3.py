@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 
 from ..base import StorageBase
 from ..convert import convert, get_type
+from .. import utils
 
 
 class S3Storage(StorageBase):
@@ -48,8 +49,7 @@ class S3Storage(StorageBase):
 
         # Save the metadata
         if meta_data is not None:
-            file_name = file_path.split("/")[-1]
-            meta_data_file_path = file_path.replace(file_name, "") + "meta.json"
+            meta_data_file_path = utils.get_meta_data_file_path(file_path)
             meta_data = convert(meta_data, bytes)
             self.client.put_object(
                 Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
@@ -74,14 +74,17 @@ class S3Storage(StorageBase):
         data = convert(obj, get_type(file_path))  # Converts file data
 
         # Get the metadata
-        meta_data_file_path = (
-            file_path.replace(file_path.split("/")[-1], "") + "meta.json"
-        )
-        obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
-        meta_data = obj["Body"]
+        try:
+            meta_data_file_path = utils.get_meta_data_file_path(file_path)
+            obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
+            meta_data = obj["Body"]
 
-        if meta_data is not None:
-            meta_data = convert(meta_data.read(), dict)
+            if meta_data is not None:
+                meta_data = convert(meta_data.read(), dict)
+
+        except ClientError:
+            print("No metadata found.")
+            meta_data = None
 
         # Create the file object
         return data, meta_data
@@ -105,8 +108,12 @@ class S3Storage(StorageBase):
 
     def delete_file(self, file_path: str) -> None:
 
-        # In s3 we simply delete the file
+        # Delete the data
         self.client.delete_object(Bucket=self.bucket, Key=file_path)
+
+        # Delete the metadata
+        meta_data_file_path = utils.get_meta_data_file_path(file_path)
+        self.client.delete_object(Bucket=self.bucket, Key=meta_data_file_path)
 
     def list_files_in_directory(self, file_path: str) -> list:
         files = self.client.list_objects_v2(Bucket=self.bucket, Prefix=file_path)
