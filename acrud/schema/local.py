@@ -1,13 +1,5 @@
-from .base import GetFile, PostFile, StorageConfig
+from .base import StorageConfig
 
 
 class LocalStorageConfig(StorageConfig):
     root_dir: str
-
-
-class LocalPostFile(PostFile):
-    pass
-
-
-class LocalGetFile(GetFile):
-    pass

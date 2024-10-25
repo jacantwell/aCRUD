@@ -1,20 +1,19 @@
-from typing import NoReturn
 import os
+from typing import Optional, Tuple, Any
 
 import boto3
 from botocore.exceptions import ClientError
 
-from ..base import Storage
+from ..base import StorageBase
 from ..convert import convert, get_type
-from ...schema import S3GetFile, S3PostFile, S3StorageConfig
 
 
-class S3Storage(Storage):
+class S3Storage(StorageBase):
     """
     A CRUD interface for S3.
     """
 
-    def __init__(self, config: S3StorageConfig) -> None:
+    def __init__(self, config) -> None:
         self.client = boto3.client("s3")
         self.bucket = config.bucket
 
@@ -25,54 +24,86 @@ class S3Storage(Storage):
         except ClientError as e:
             raise e
 
-    def create_file(self, file: S3PostFile) -> S3PostFile:
+    def create_file(
+        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+    ) -> None:
+        """
+        Save a file to S3.
+        The data must be of a supported type.
+        The meta data, if provided, must be a dictionary.
+        If the file_path is `example/data.csv`, the meta data will be saved to `example/meta.json`.
+
+        Args:
+            file_path (str): The path to the file.
+            data (Any): The data to save.
+            meta_data (Optional[dict], optional): The meta data to save. Defaults
+
+        Returns:
+            None
+        """
 
         # Save the data
-        data = convert(file.data, bytes)
-        self.client.put_object(Body=data, Bucket=self.bucket, Key=file.file_path)
+        data = convert(data, bytes)
+        self.client.put_object(Body=data, Bucket=self.bucket, Key=file_path)
 
         # Save the metadata
-        if file.meta_data is not None:
-            file_name = file.file_path.split("/")[-1]
-            meta_data_file_path = file.file_path.replace(file_name, "") + "meta.json"
-            meta_data = convert(file.meta_data, bytes)
+        if meta_data is not None:
+            file_name = file_path.split("/")[-1]
+            meta_data_file_path = file_path.replace(file_name, "") + "meta.json"
+            meta_data = convert(meta_data, bytes)
             self.client.put_object(
                 Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
             )
 
-        return file
+    def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
+        """
+        Read a file from S3.
+        The data will be converted to the appropriate type.
+        The meta data, if provided, will be converted to a dictionary.
 
-    def read_file(self, file: S3GetFile) -> S3PostFile:
+        Args:
+            file_path (str): The path to the file.
+
+        Returns:
+            Tuple[Any, Optional[dict]]: The data and, if available, the meta data.
+        """
 
         # Get the data
-        obj = self.client.get_object(Bucket=self.bucket, Key=file.file_path)
+        obj = self.client.get_object(Bucket=self.bucket, Key=file_path)
         obj = obj["Body"].read()
-        data = convert(obj, get_type(file.file_path))  # Converts file data
+        data = convert(obj, get_type(file_path))  # Converts file data
 
         # Get the metadata
         meta_data_file_path = (
-            file.file_path.replace(file.file_path.split("/")[-1], "") + "meta.json"
+            file_path.replace(file_path.split("/")[-1], "") + "meta.json"
         )
         obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
-        obj = obj["Body"]
+        meta_data = obj["Body"]
 
-        if obj is not None:
-            meta_data = convert(obj.read(), dict)
-        else:
-            meta_data = None
+        if meta_data is not None:
+            meta_data = convert(meta_data.read(), dict)
 
         # Create the file object
-        file = S3PostFile(file_path=file.file_path, data=data, meta_data=meta_data)
-        return file
+        return data, meta_data
 
-    def update_file(self, file: S3PostFile) -> S3PostFile:
+    def update_file(self, file_path: str, data: Any, meta_data: Optional[dict]) -> None:
+        """
+        TODO: Implement this method.
+        Replace the data in a file in S3.
+
+        Args:
+            file_path (str): The path to the file.
+            data (Any): The data to save.
+
+        Returns:
+            None
+
+        """
 
         # In s3 we simply overwrite the file
-        self.create_file(file)
+        self.create_file(file_path, data, meta_data)
 
-        return file
-
-    def delete_file(self, file_path: str) -> NoReturn:
+    def delete_file(self, file_path: str) -> None:
 
         # In s3 we simply delete the file
         self.client.delete_object(Bucket=self.bucket, Key=file_path)
