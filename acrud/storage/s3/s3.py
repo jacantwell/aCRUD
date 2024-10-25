@@ -74,12 +74,17 @@ class S3Storage(StorageBase):
         data = convert(obj, get_type(file_path))  # Converts file data
 
         # Get the metadata
-        meta_data_file_path = utils.get_meta_data_file_path(file_path)
-        obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
-        meta_data = obj["Body"]
+        try:
+            meta_data_file_path = utils.get_meta_data_file_path(file_path)
+            obj = self.client.get_object(Bucket=self.bucket, Key=meta_data_file_path)
+            meta_data = obj["Body"]
 
-        if meta_data is not None:
-            meta_data = convert(meta_data.read(), dict)
+            if meta_data is not None:
+                meta_data = convert(meta_data.read(), dict)
+
+        except ClientError:
+            print("No metadata found.")
+            meta_data = None
 
         # Create the file object
         return data, meta_data
