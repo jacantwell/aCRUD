@@ -1,12 +1,11 @@
-from typing import Optional, Tuple, Any
 import os
+from typing import Optional, Tuple, Any
 
 import boto3
 from botocore.exceptions import ClientError
 
 from ..base import StorageBase
 from ..convert import convert, get_type
-from ...schema import S3StorageConfig
 
 
 class S3Storage(StorageBase):

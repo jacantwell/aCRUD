@@ -1,9 +1,8 @@
-from typing import Optional, Tuple, Any
 import os
+from typing import Optional, Tuple, Any
 
 from ..base import StorageBase
 from ..convert import convert, get_type
-from ...schema import LocalStorageConfig
 from ...exception import lookup_handler
 
 
