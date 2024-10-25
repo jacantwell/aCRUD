@@ -3,8 +3,7 @@ from typing import Any, Dict, Optional
 import configparser
 from importlib import import_module
 
-# from acrud.storage import local
-import_module("acrud.storage.local", package="acrud.storage")
+from acrud.storage.base import StorageBase
 
 
 class StorageConfig:
@@ -16,7 +15,7 @@ class StorageConfig:
 
 class StorageFactory:
     @staticmethod
-    def create_storage(config: StorageConfig):
+    def create_storage(config: StorageConfig) -> StorageBase:
         storage_type = config.storage_type.lower()
         package = "acrud.storage"
         # Dynamically import the appropriate storage module
