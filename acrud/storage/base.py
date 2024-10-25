@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 
-class Storage(ABC):
+class StorageBase(ABC):
 
     @abstractmethod
-    def ping() -> bool:
+    def ping() -> dict:
         pass
 
     @abstractmethod
@@ -17,21 +16,17 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def save_string() -> None:
+    def create_file() -> None:
         pass
 
     @abstractmethod
-    def load_string() -> str:
+    def read_file() -> str:
         pass
 
     @abstractmethod
-    def save_object() -> None:
+    def update_file() -> None:
         pass
 
     @abstractmethod
-    def load_object() -> Any:
-        pass
-
-    @abstractmethod
-    def delete_directory() -> None:
+    def delete_file() -> None:
         pass
