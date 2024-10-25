@@ -103,8 +103,12 @@ class S3Storage(StorageBase):
 
     def delete_file(self, file_path: str) -> None:
 
-        # In s3 we simply delete the file
+        # Delete the data
         self.client.delete_object(Bucket=self.bucket, Key=file_path)
+
+        # Delete the metadata
+        meta_data_file_path = utils.get_meta_data_file_path(file_path)
+        self.client.delete_object(Bucket=self.bucket, Key=meta_data_file_path)
 
     def list_files_in_directory(self, file_path: str) -> list:
         files = self.client.list_objects_v2(Bucket=self.bucket, Prefix=file_path)

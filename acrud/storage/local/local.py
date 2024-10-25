@@ -118,8 +118,7 @@ class LocalStorage(StorageBase):
             lookup_handler(self, file_path)
 
         # Delete the metadata
-        full_file_path = full_file_path.split("/")[-1]
-        meta_data_file_path = file_path.replace(full_file_path, "") + "meta.json"
+        meta_data_file_path = utils.get_meta_data_file_path(full_file_path)
         if os.path.exists(meta_data_file_path):
             os.remove(meta_data_file_path)
 
