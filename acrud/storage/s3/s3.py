@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Any
 
 import boto3
 from botocore.exceptions import ClientError
+from pydantic import BaseModel
 
 from ..base import StorageBase
 from ..convert import convert, get_type
@@ -14,7 +15,7 @@ class S3Storage(StorageBase):
     A CRUD interface for S3.
     """
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: BaseModel) -> None:
         self.client = boto3.client("s3")
         self.bucket = config.bucket
 

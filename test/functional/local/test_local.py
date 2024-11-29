@@ -6,11 +6,10 @@ from typing import Any
 import shutil
 
 
-# Set working directory to the directory of this file
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+from acrud import create_storage, StorageConfig
 
-# Assuming the LocalStorage class is in a module called local
-from acrud import storage
+local_config = StorageConfig({"storage_type": "local", "root": "."})
+storage = create_storage(local_config)
 
 
 class TestLocalStorage:
