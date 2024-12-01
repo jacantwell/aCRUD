@@ -6,7 +6,7 @@ authors = ["jacantwell <jasper66018@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 dill = "^0.3.8"
 pytest = "^8.2.2"
 typeguard = ">=2.13.3"
