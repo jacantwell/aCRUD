@@ -1,23 +1,29 @@
-from typing import Any, Dict
 from importlib import import_module
+from stringcase import pascalcase
+from typing import Any, Dict
 
-from acrud.storage.base import StorageBase
-
-
-class StorageConfig:
-    def __init__(self, config_dict: Dict[str, Any]):
-        self.storage_type = config_dict.get("storage_type")
-        # Add any other common config parameters here
-        self.__dict__.update(config_dict)
+from acrud.storage import LocalStorageConfig, GoogleDriveStorageConfig, S3StorageConfig
+from acrud.storage.base import StorageBase, StorageConfig
 
 
-def create_storage(config: StorageConfig) -> StorageBase:
-    storage_type = config.storage_type.lower()
+def get_config_from_str(storage_type: str, config: Dict[str, Any]) -> StorageConfig:
+    package = "acrud.storage"
+    try:
+        module = import_module(package + "." + storage_type, package)
+        storage_config_class = getattr(
+            module, f"{pascalcase(storage_type)}StorageConfig"
+        )
+        return storage_config_class(**config)
+    except (ImportError, AttributeError) as e:
+        raise ValueError(f"Unsupported storage type: {storage_type}") from e
+
+
+def create_storage(storage_type: str, config: StorageConfig) -> StorageBase:
     package = "acrud.storage"
     # Dynamically import the appropriate storage module
     try:
         module = import_module(package + "." + storage_type, package)
-        storage_class = getattr(module, f"{storage_type.capitalize()}Storage")
+        storage_class = getattr(module, f"{pascalcase(storage_type)}Storage")
         return storage_class(config)
     except (ImportError, AttributeError) as e:
-        raise ValueError(f"Unsupported storage type: {config.storage_type}") from e
+        raise ValueError(f"Unsupported storage type: {storage_type}") from e

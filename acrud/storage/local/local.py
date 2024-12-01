@@ -1,10 +1,16 @@
 import os
 from typing import Optional, Tuple, Any
 
-from ..base import StorageBase
+from pydantic import BaseModel
+
+from ..base import StorageBase, StorageConfig
 from ..convert import convert, get_type
 from ...exception import lookup_handler
 from .. import utils
+
+
+class LocalStorageConfig(StorageConfig):
+    root: str
 
 
 class LocalStorage(StorageBase):
@@ -12,7 +18,7 @@ class LocalStorage(StorageBase):
     A CRUD interface for local storage.
     """
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: LocalStorageConfig) -> None:
         self.root_dir = config.root
 
     def ping(self) -> dict:

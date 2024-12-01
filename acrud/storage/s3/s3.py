@@ -5,9 +5,13 @@ import boto3
 from botocore.exceptions import ClientError
 from pydantic import BaseModel
 
-from ..base import StorageBase
+from ..base import StorageBase, StorageConfig
 from ..convert import convert, get_type
 from .. import utils
+
+
+class S3StorageConfig(StorageConfig):
+    bucket: str
 
 
 class S3Storage(StorageBase):
@@ -15,7 +19,7 @@ class S3Storage(StorageBase):
     A CRUD interface for S3.
     """
 
-    def __init__(self, config: BaseModel) -> None:
+    def __init__(self, config: S3StorageConfig) -> None:
         self.client = boto3.client("s3")
         self.bucket = config.bucket
 

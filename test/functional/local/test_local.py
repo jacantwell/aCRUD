@@ -6,10 +6,10 @@ from typing import Any
 import shutil
 
 
-from acrud import create_storage, StorageConfig
+from acrud import create_storage, LocalStorageConfig
 
-local_config = StorageConfig({"storage_type": "local", "root": "."})
-storage = create_storage(local_config)
+local_config = LocalStorageConfig(root=".")
+storage = create_storage("local", local_config)
 
 
 class TestLocalStorage:
