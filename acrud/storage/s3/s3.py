@@ -49,16 +49,22 @@ class S3Storage(StorageBase):
         """
 
         # Save the data
-        data = convert(data, bytes)
-        self.client.put_object(Body=data, Bucket=self.bucket, Key=file_path)
+        try:
+            data = convert(data, bytes)
+            self.client.put_object(Body=data, Bucket=self.bucket, Key=file_path)
+        except Exception as e:
+            raise e
 
         # Save the metadata
         if meta_data is not None:
-            meta_data_file_path = utils.get_meta_data_file_path(file_path)
-            meta_data = convert(meta_data, bytes)
-            self.client.put_object(
-                Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
-            )
+            try:
+                meta_data_file_path = utils.get_meta_data_file_path(file_path)
+                meta_data = convert(meta_data, bytes)
+                self.client.put_object(
+                    Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
+                )
+            except Exception as e:
+                raise e
 
     def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
         """
