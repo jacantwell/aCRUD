@@ -18,8 +18,9 @@ def get_config_from_str(storage_type: str, config: Dict[str, Any]) -> StorageCon
         raise ValueError(f"Unsupported storage type: {storage_type}") from e
 
 
-def create_storage(storage_type: str, config: StorageConfig) -> StorageBase:
+def create_storage(config: StorageConfig) -> StorageBase:
     package = "acrud.storage"
+    storage_type = config.__class__.__name__.replace("StorageConfig", "").lower()
     # Dynamically import the appropriate storage module
     try:
         module = import_module(package + "." + storage_type, package)
