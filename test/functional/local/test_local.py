@@ -1,15 +1,13 @@
 import pytest
 import os
 import json
-from unittest.mock import patch, mock_open
-from typing import Any
 import shutil
 
 
 from acrud import create_storage, LocalStorageConfig
 
 local_config = LocalStorageConfig(root=".")
-storage = create_storage("local", local_config)
+storage = create_storage(local_config)
 
 
 class TestLocalStorage:
