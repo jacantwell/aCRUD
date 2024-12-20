@@ -1,8 +1,6 @@
 import os
 from typing import Optional, Tuple, Any
 
-from pydantic import BaseModel
-
 from ..base import StorageBase, StorageConfig
 from ..convert import convert, get_type
 from ...exception import lookup_handler
