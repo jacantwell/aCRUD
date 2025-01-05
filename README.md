@@ -22,11 +22,11 @@ aCRUD handles the loading and saving of multiple file types, including:
 ## Installation
 
 ```bash
-pip install acrud
+pip install acrud --extras s3, gdrive, ...
 ```
 
 ```bash
-poetry add acrud
+poetry add acrud --extras s3, gdrive, ...
 ```
 
 ## Usage
