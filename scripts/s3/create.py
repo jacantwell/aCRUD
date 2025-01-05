@@ -14,7 +14,7 @@ output_file_path = args.output_file_path
 meta_data = args.meta_data
 bucket = args.bucket
 
-local_storage_config = LocalStorageConfig({"root": "./"})
+local_storage_config = LocalStorageConfig(root="./")
 local_storage = create_storage(local_storage_config)
 s3_storage_config = S3StorageConfig({"bucket": bucket})
 s3_storage = create_storage(s3_storage_config)

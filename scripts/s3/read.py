@@ -12,7 +12,7 @@ args = parser.parse_args()
 file_path = args.file_path
 bucket = args.bucket
 
-s3_storage_config = S3StorageConfig({"bucket": bucket})
+s3_storage_config = S3StorageConfig(bucket=bucket)
 s3_storage = create_storage(s3_storage_config)
 
 data, meta_data = s3_storage.read_file(file_path)
