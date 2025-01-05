@@ -1588,9 +1588,10 @@ files = [
 ]
 
 [extras]
+gdrive = ["google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"]
 s3 = ["boto3"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "1f47bfb9e2c3bf5f1e7b4db681d44cd82ae4656626993285511891436830a35d"
+content-hash = "aa763a7044e6be3dc9249383cc8e53e958594684ba8a98d17eac492cc313c315"
