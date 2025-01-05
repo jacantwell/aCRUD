@@ -22,6 +22,11 @@ python-dotenv = "^1.0.1"
 
 [tool.poetry.extras]
 s3 = ["boto3"]
+gdrive = [
+    "google-auth-oauthlib",
+    "google-auth-httplib2",
+    "google-api-python-client",
+]
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
