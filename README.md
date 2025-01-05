@@ -5,36 +5,59 @@
 
 # aCRUD
 
-## Motivation
+This python package provides a CRUD interfaces for a number of storage providers. Currently supported providers:
 
-The goal of this project is to create a platform agnostic CRUD storage system. This system will allow users to upload files to different platforms (Google Drive, Sharepoint, DigiCloud etc.) without having to worry about the specifics of the platform. This will allow for a more modular system where the storage system can be easily swapped out for another.
+- [x] Local
+- [x] AWS S3
+- [x] Google Drive
 
-## Implementation
+aCRUD handles the loading and saving of multiple file types, including:
 
-To use aCRUD you must have a `storage.config` file in your project. This file should contain the configuration information for the storage system you wish to use. Currently this file should be in one of the following formats:
+- [x] JSON
+- [x] CSV
+- [x] PDF
+- [x] PKL
+- [x] TXT
 
-```config
-[DEFAULT]
-STORAGE_TYPE = local
-ROOT = .
+## Installation
+
+```bash
+pip install acrud
 ```
-  
-```config
-[DEFAULT]
-STORAGE_TYPE = s3
-BUCKET = my-bucket
+
+```bash
+poetry add acrud
 ```
 
-This file will configure the storage system on import. Now you can simply use the `storage.create_file` and `storage.get_file` functions to interact with the storage system. Changing the platform you are using is as simple as changing the `storage.config` file.
+## Usage
 
-#### TODO
+```python
+from acrud import create_storage, get_storage_from_string, S3StorageConfig
 
-- [ ] Implement more graceful error handling.
-- [ ] Documentation.
-- [ ] Add support for Microsoft Sharepoint.
-- [ ] Add support for Google Drive.
-- [ ] Add unit tests.
-- [ ] Add logging.
+# Create a storage config object
+# Directly:
+config = S3StorageConfig(
+    bucket="my-bucket",
+)
+
+# Or from a string and a dictionary
+config = get_storage_from_string("s3", {"bucket": "my-bucket"})
+
+# Create a storage object
+storage = create_storage("s3", config)
+
+# Create a file
+storage.create_file("my-file.txt", "Hello, World!")
+
+# Read a file
+content = storage.read_file("my-file.txt")
+
+# Update a file
+storage.update_file("my-file.txt", "Hello, World! Updated")
+
+# Delete a file
+storage.delete_file("my-file.txt")
+```
 
 ##### Note
 
