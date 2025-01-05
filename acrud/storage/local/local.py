@@ -1,10 +1,14 @@
 import os
 from typing import Optional, Tuple, Any
 
-from ..base import StorageBase
+from ..base import StorageBase, StorageConfig
 from ..convert import convert, get_type
 from ...exception import lookup_handler
 from .. import utils
+
+
+class LocalStorageConfig(StorageConfig):
+    root: str
 
 
 class LocalStorage(StorageBase):
@@ -12,7 +16,7 @@ class LocalStorage(StorageBase):
     A CRUD interface for local storage.
     """
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: LocalStorageConfig) -> None:
         self.root_dir = config.root
 
     def ping(self) -> dict:
@@ -123,13 +127,18 @@ class LocalStorage(StorageBase):
             os.remove(meta_data_file_path)
 
     def list_files_in_directory(self, file_path: str) -> list:
-        path = os.path.join(self.root_dir, path)
+        full_path = os.path.join(self.root_dir, file_path)
+        if not os.path.exists(full_path):
+            return []
 
-        files = os.listdir(path)
-
-        files = ["".join(file.split("/")[-1].split(".")[:-1]) for file in files]
-        files = list(set(files))
-        return files
+        files = os.listdir(full_path)
+        # Remove file extensions and metadata files
+        files = [
+            os.path.splitext(f)[0]
+            for f in files
+            if not f.startswith(".") and not f.endswith(".meta.json")
+        ]
+        return list(set(files))
 
     def list_subdirectories_in_directory(self, file_path) -> list:
 
