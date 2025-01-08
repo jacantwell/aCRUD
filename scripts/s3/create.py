@@ -1,6 +1,8 @@
 import argparse
 
-from acrud import S3StorageConfig, LocalStorageConfig, create_storage
+from acrud import create_storage
+from acrud.storage.s3 import S3StorageConfig
+from acrud.storage.local import LocalStorageConfig
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_data_local_file_path", type=str, required=True)

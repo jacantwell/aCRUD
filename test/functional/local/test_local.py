@@ -4,7 +4,8 @@ import json
 import shutil
 
 
-from acrud import create_storage, LocalStorageConfig
+from acrud import create_storage
+from acrud.storage import LocalStorageConfig
 
 local_config = LocalStorageConfig(root=".")
 storage = create_storage(local_config)
