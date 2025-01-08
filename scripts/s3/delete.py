@@ -1,6 +1,8 @@
 import argparse
 
-from acrud import S3StorageConfig, create_storage
+from acrud import create_storage
+from acrud.storage.s3 import S3StorageConfig
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file_path", type=str, required=True)

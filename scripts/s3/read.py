@@ -1,7 +1,7 @@
 import argparse
 from pprint import pprint
 
-from acrud import S3StorageConfig, create_storage
+from acrud import create_storage, get_config_from_str
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file_path", type=str, required=True)
@@ -12,7 +12,7 @@ args = parser.parse_args()
 file_path = args.file_path
 bucket = args.bucket
 
-s3_storage_config = S3StorageConfig(bucket=bucket)
+s3_storage_config = get_config_from_str("s3", {"bucket": bucket})
 s3_storage = create_storage(s3_storage_config)
 
 data, meta_data = s3_storage.read_file(file_path)
