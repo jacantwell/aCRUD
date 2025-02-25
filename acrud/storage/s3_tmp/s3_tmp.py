@@ -34,16 +34,16 @@ class S3TmpStorage(StorageBase):
             raise e
 
     async def create_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> str:
         """
         Save a file to S3Tmp.
         The data must be of a supported type.
         The meta data, if provided, must be a dictionary.
-        If the file_path is `example/data.csv`, the meta data will be saved to `example/meta.json`.
+        If the key is `example/data.csv`, the meta data will be saved to `example/meta.json`.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
             meta_data (Optional[dict], optional): The meta data to save. Defaults
 
@@ -54,58 +54,56 @@ class S3TmpStorage(StorageBase):
         # Save the data
         try:
             data = convert(data, bytes)
-            self.client.put_object(Body=data, Bucket=self.bucket, Key=file_path)
+            self.client.put_object(Body=data, Bucket=self.bucket, Key=key)
         except Exception as e:
             raise e
 
         # Save the metadata
         if meta_data is not None:
             try:
-                meta_data_file_path = utils.get_meta_data_file_path(file_path)
+                meta_data_key = utils.get_meta_data_key(key)
                 meta_data = convert(meta_data, bytes)
                 self.client.put_object(
-                    Body=meta_data, Bucket=self.bucket, Key=meta_data_file_path
+                    Body=meta_data, Bucket=self.bucket, Key=meta_data_key
                 )
             except Exception as e:
                 raise e
 
         # Generate and return a presigned URL
         return self.client.generate_presigned_url(
-            "get_object", Params={"Bucket": self.bucket, "Key": file_path}
+            "get_object", Params={"Bucket": self.bucket, "Key": key}
         )
 
-    async def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
+    async def read_file(self, key: str) -> Tuple[Any, Optional[dict]]:
         """
         Read a file from S3Tmp.
         The data will be converted to the appropriate type.
         The meta data, if provided, will be converted to a dictionary.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
 
         Returns:
             Tuple[Any, Optional[dict]]: The data and, if available, the meta data.
         """
 
         # Get the data
-        response = requests.get(file_path)
+        response = requests.get(key)
         data = response.content
-        data = convert(data, get_type(file_path))
+        data = convert(data, get_type(key))
 
         # TODO: Think about how to handle the metadata
 
         return data, None
 
-    async def update_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict]
-    ) -> None:
+    async def update_file(self, key: str, data: Any, meta_data: Optional[dict]) -> None:
         pass
 
-    async def delete_file(self, file_path: str) -> None:
+    async def delete_file(self, key: str) -> None:
         pass
 
-    async def list_files_in_directory(self, file_path: str) -> list:
+    async def list_files_in_directory(self, key: str) -> list:
         pass
 
-    async def list_subdirectories_in_directory(self, file_path) -> list:
+    async def list_subdirectories_in_directory(self, key) -> list:
         pass

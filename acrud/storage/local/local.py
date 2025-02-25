@@ -23,16 +23,16 @@ class LocalStorage(StorageBase):
         return {"response": "pong"}
 
     def create_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> None:
         """
         Save a file to local storage.
         The data must be of a supported type.
         The meta data, if provided, must be a dictionary.
-        If the file_path is `example/data.csv`, the meta data will be saved to `example/meta.json`.
+        If the key is `example/data.csv`, the meta data will be saved to `example/meta.json`.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
             meta_data (Optional[dict], optional): The meta data to save. Defaults
 
@@ -40,51 +40,51 @@ class LocalStorage(StorageBase):
             None
         """
 
-        file_path = os.path.join(self.root_dir, file_path)
+        key = os.path.join(self.root_dir, key)
 
-        folder = "/".join(file_path.split("/")[:-1])
+        folder = "/".join(key.split("/")[:-1])
 
         if not os.path.exists(folder):
             os.makedirs(folder)
 
         # Save the data
         data = convert(data, bytes)
-        with open(file_path, "wb") as f:
+        with open(key, "wb") as f:
             f.write(data)
 
         # Save the metadata
         if meta_data is not None:
-            meta_data_file_path = utils.get_meta_data_file_path(file_path)
+            meta_data_key = utils.get_meta_data_key(key)
             meta_data = convert(meta_data, bytes)
-            with open(meta_data_file_path, "wb") as f:
+            with open(meta_data_key, "wb") as f:
                 f.write(meta_data)
 
-    def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
+    def read_file(self, key: str) -> Tuple[Any, Optional[dict]]:
         """
         Read a file from local storage.
         The data will be converted to the appropriate type.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
 
         Returns:
             Tuple[Any, Optional[dict]]: The data and, if available, the metadata.
         """
 
-        file_path = os.path.join(self.root_dir, file_path)
+        key = os.path.join(self.root_dir, key)
 
         try:
-            with open(file_path, "rb") as f:
+            with open(key, "rb") as f:
                 obj = f.read()
         except FileNotFoundError:
-            lookup_handler(self, file_path)
+            lookup_handler(self, key)
 
-        data = convert(obj, get_type(file_path))  # Converts file data
+        data = convert(obj, get_type(key))  # Converts file data
 
         # If a metadata file exists, read it
-        meta_data_file_path = utils.get_meta_data_file_path(file_path)
-        if os.path.exists(meta_data_file_path):
-            with open(meta_data_file_path, "rb") as f:
+        meta_data_key = utils.get_meta_data_key(key)
+        if os.path.exists(meta_data_key):
+            with open(meta_data_key, "rb") as f:
                 obj = f.read()
             meta_data = convert(obj, dict)
         else:
@@ -93,14 +93,14 @@ class LocalStorage(StorageBase):
         return data, meta_data
 
     def update_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> None:
         """
         TODO: Implement this method.
         Replace the data in a file in S3.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
 
         Returns:
@@ -109,25 +109,25 @@ class LocalStorage(StorageBase):
         """
 
         # In Local we simply overwrite the file
-        self.create_file(file_path, data, meta_data)
+        self.create_file(key, data, meta_data)
 
-    def delete_file(self, file_path: str) -> None:
+    def delete_file(self, key: str) -> None:
 
-        full_file_path = os.path.join(self.root_dir, file_path)
+        full_key = os.path.join(self.root_dir, key)
 
         # Delete the data
         try:
-            os.remove(full_file_path)
+            os.remove(full_key)
         except LookupError:
-            lookup_handler(self, file_path)
+            lookup_handler(self, key)
 
         # Delete the metadata
-        meta_data_file_path = utils.get_meta_data_file_path(full_file_path)
-        if os.path.exists(meta_data_file_path):
-            os.remove(meta_data_file_path)
+        meta_data_key = utils.get_meta_data_key(full_key)
+        if os.path.exists(meta_data_key):
+            os.remove(meta_data_key)
 
-    def list_files_in_directory(self, file_path: str) -> list:
-        full_path = os.path.join(self.root_dir, file_path)
+    def list_files_in_directory(self, key: str) -> list:
+        full_path = os.path.join(self.root_dir, key)
         if not os.path.exists(full_path):
             return []
 
@@ -140,9 +140,9 @@ class LocalStorage(StorageBase):
         ]
         return list(set(files))
 
-    def list_subdirectories_in_directory(self, file_path) -> list:
+    def list_subdirectories_in_directory(self, key) -> list:
 
-        path = os.path.join(self.root_dir, file_path)
+        path = os.path.join(self.root_dir, key)
         files = os.listdir(path)
 
         # Filter out entries that start with a dot

@@ -22,11 +22,11 @@ if SUPPORTS_PICKLE:
     import dill
 
 
-def get_type(file_path: str) -> Type:
+def get_type(key: str) -> Type:
     """
     Get the type of the file based on the file extension.
     """
-    file_type = file_path.split(".")[-1]
+    file_type = key.split(".")[-1]
     match file_type:
         case "txt":
             return str

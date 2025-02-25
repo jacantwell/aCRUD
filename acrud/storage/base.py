@@ -15,16 +15,16 @@ class StorageBase(ABC):
         pass
 
     def create_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> None:
         """
         Save a file.
         The data must be of a supported type.
         The meta data, if provided, must be a dictionary.
-        If the file_path is `example/data.csv`, the meta data will be saved to `example/meta.json`.
+        If the key is `example/data.csv`, the meta data will be saved to `example/meta.json`.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
             meta_data (Optional[dict], optional): The meta data to save. Defaults
 
@@ -33,13 +33,13 @@ class StorageBase(ABC):
         """
         pass
 
-    def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
+    def read_file(self, key: str) -> Tuple[Any, Optional[dict]]:
         """
         Read a file.
         The data will be converted to the appropriate type.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
 
         Returns:
             Tuple[Any, Optional[dict]]: The data and, if available, the metadata.
@@ -47,13 +47,13 @@ class StorageBase(ABC):
         pass
 
     def update_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> None:
         """
         Update a file and its metadata.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
 
         Returns:
@@ -62,21 +62,21 @@ class StorageBase(ABC):
         """
         pass
 
-    def delete_file(self, file_path: str) -> None:
+    def delete_file(self, key: str) -> None:
         """
         Delete a file.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
 
         Returns:
             None
         """
 
     @abstractmethod
-    def list_files_in_directory(file_path: str) -> list:
+    def list_files_in_directory(key: str) -> list:
         pass
 
     @abstractmethod
-    def list_subdirectories_in_directory(file_path: str) -> list:
+    def list_subdirectories_in_directory(key: str) -> list:
         pass

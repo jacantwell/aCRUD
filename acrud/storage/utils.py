@@ -1,8 +1,8 @@
 import os
 
 
-def get_meta_data_file_path(file_path: str):
-    file_path = file_path.split(".")[:-1]
-    file_path = ".".join(file_path)
-    meta_data_file_path = file_path + "_meta.json"
-    return meta_data_file_path
+def get_meta_data_key(key: str):
+    key = key.split(".")[:-1]
+    key = ".".join(key)
+    meta_data_key = key + "_meta.json"
+    return meta_data_key

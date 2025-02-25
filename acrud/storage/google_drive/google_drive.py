@@ -64,16 +64,16 @@ class GoogleDriveStorage(StorageBase):
         return {"response": "pong"}
 
     def create_file(
-        self, file_path: str, data: Any, meta_data: Optional[dict] = None
+        self, key: str, data: Any, meta_data: Optional[dict] = None
     ) -> None:
         """
         Save a file to Google Drive.
         The data must be of a supported type.
         The meta data, if provided, must be a dictionary.
-        If the file_path is `example/data.csv`, the meta data will be saved to `example/meta.json`.
+        If the key is `example/data.csv`, the meta data will be saved to `example/meta.json`.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
             data (Any): The data to save.
             meta_data (Optional[dict], optional): The meta data to save.
 
@@ -85,24 +85,24 @@ class GoogleDriveStorage(StorageBase):
             # Convert data to bytes and write to temp file
             byte_data = convert(data, bytes)
             temp_file.write(byte_data)
-            temp_file_path = temp_file.name
+            temp_key = temp_file.name
 
         try:
             # Prepare file metadata
-            file_metadata = {"name": os.path.basename(file_path)}
+            file_metadata = {"name": os.path.basename(key)}
             if self.root_folder_id:
                 file_metadata["parents"] = [self.root_folder_id]
 
             # Upload the main file
-            media = MediaFileUpload(temp_file_path, resumable=True)
+            media = MediaFileUpload(temp_key, resumable=True)
             self.service.files().create(
                 body=file_metadata, media_body=media, fields="id"
             ).execute()
 
             # Handle metadata if provided
             if meta_data is not None:
-                meta_data_file_path = utils.get_meta_data_file_path(file_path)
-                meta_file_metadata = {"name": os.path.basename(meta_data_file_path)}
+                meta_data_key = utils.get_meta_data_key(key)
+                meta_file_metadata = {"name": os.path.basename(meta_data_key)}
                 if self.root_folder_id:
                     meta_file_metadata["parents"] = [self.root_folder_id]
 
@@ -121,22 +121,22 @@ class GoogleDriveStorage(StorageBase):
                     os.unlink(meta_temp_path)
 
         finally:
-            os.unlink(temp_file_path)
+            os.unlink(temp_key)
 
-    def read_file(self, file_path: str) -> Tuple[Any, Optional[dict]]:
+    def read_file(self, key: str) -> Tuple[Any, Optional[dict]]:
         """
         Read a file from Google Drive.
         The data will be converted to the appropriate type.
         The meta data, if provided, will be converted to a dictionary.
 
         Args:
-            file_path (str): The path to the file.
+            key (str): The path to the file.
 
         Returns:
             Tuple[Any, Optional[dict]]: The data and, if available, the meta data.
         """
         # Find the file by name
-        file_name = os.path.basename(file_path)
+        file_name = os.path.basename(key)
         response = (
             self.service.files()
             .list(q=f"name = '{file_name}'", spaces="drive", fields="files(id, name)")
@@ -144,7 +144,7 @@ class GoogleDriveStorage(StorageBase):
         )
 
         if not response["files"]:
-            raise FileNotFoundError(f"File {file_path} not found in Google Drive")
+            raise FileNotFoundError(f"File {key} not found in Google Drive")
 
         file_id = response["files"][0]["id"]
 
@@ -158,13 +158,13 @@ class GoogleDriveStorage(StorageBase):
             _, done = downloader.next_chunk()
 
         # Convert the data to the appropriate type
-        data = convert(fh.getvalue(), get_type(file_path))
+        data = convert(fh.getvalue(), get_type(key))
 
         # Try to get metadata
         meta_data = None
         try:
-            meta_data_file_path = utils.get_meta_data_file_path(file_path)
-            meta_file_name = os.path.basename(meta_data_file_path)
+            meta_data_key = utils.get_meta_data_key(key)
+            meta_file_name = os.path.basename(meta_data_key)
 
             response = (
                 self.service.files()
@@ -194,19 +194,19 @@ class GoogleDriveStorage(StorageBase):
 
         return data, meta_data
 
-    def delete_file(self, file_path: str) -> None:
+    def delete_file(self, key: str) -> None:
         """
         Delete a file and its metadata from Google Drive.
-        If the file_path is `example/data.csv`, both `example/data.csv` and `example/meta.json` will be deleted if they exist.
+        If the key is `example/data.csv`, both `example/data.csv` and `example/meta.json` will be deleted if they exist.
 
         Args:
-            file_path (str): The path to the file to delete.
+            key (str): The path to the file to delete.
 
         Returns:
             None
         """
         # Find and delete the main file
-        file_name = os.path.basename(file_path)
+        file_name = os.path.basename(key)
         response = (
             self.service.files()
             .list(q=f"name = '{file_name}'", spaces="drive", fields="files(id, name)")
@@ -214,15 +214,15 @@ class GoogleDriveStorage(StorageBase):
         )
 
         if not response["files"]:
-            raise FileNotFoundError(f"File {file_path} not found in Google Drive")
+            raise FileNotFoundError(f"File {key} not found in Google Drive")
 
         file_id = response["files"][0]["id"]
         self.service.files().delete(fileId=file_id).execute()
 
         # Try to find and delete the metadata file if it exists
         try:
-            meta_data_file_path = utils.get_meta_data_file_path(file_path)
-            meta_file_name = os.path.basename(meta_data_file_path)
+            meta_data_key = utils.get_meta_data_key(key)
+            meta_file_name = os.path.basename(meta_data_key)
 
             response = (
                 self.service.files()
@@ -241,8 +241,8 @@ class GoogleDriveStorage(StorageBase):
         except Exception as e:
             print(f"No metadata file found to delete: {str(e)}")
 
-    def list_files_in_directory(self, file_path: str) -> list:
+    def list_files_in_directory(self, key: str) -> list:
         pass
 
-    def list_subdirectories_in_directory(self, file_path) -> list:
+    def list_subdirectories_in_directory(self, key) -> list:
         pass
