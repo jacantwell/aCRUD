@@ -1,11 +1,8 @@
-import os
 from typing import Optional, Tuple, Any
 import requests
-import json
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import BaseModel
 from mypy_boto3_s3.client import S3Client
 
 from ..base import StorageBase, StorageConfig
@@ -33,9 +30,9 @@ class S3TmpStorage(StorageBase):
         except ClientError as e:
             raise e
 
-    async def create_file(
+    def create_file(
         self, key: str, data: Any, meta_data: Optional[dict] = None
-    ) -> str:
+    ) -> Tuple[str, Optional[str]]:
         """
         Save a file to S3Tmp.
         The data must be of a supported type.
@@ -66,15 +63,23 @@ class S3TmpStorage(StorageBase):
                 self.client.put_object(
                     Body=meta_data, Bucket=self.bucket, Key=meta_data_key
                 )
+                meta_data_url = self.client.generate_presigned_url(
+                    "get_object", Params={"Bucket": self.bucket, "Key": meta_data_key}
+                )
             except Exception as e:
                 raise e
+        else:
+            meta_data_url = None
 
         # Generate and return a presigned URL
-        return self.client.generate_presigned_url(
+        data_url = self.client.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}
         )
+        return data_url, meta_data_url
 
-    async def read_file(self, key: str) -> Tuple[Any, Optional[dict]]:
+    def read_file(
+        self, key: str, meta_data_key: Optional[str] = None
+    ) -> Tuple[Any, Optional[dict]]:
         """
         Read a file from S3Tmp.
         The data will be converted to the appropriate type.
@@ -88,22 +93,34 @@ class S3TmpStorage(StorageBase):
         """
 
         # Get the data
-        response = requests.get(key)
-        data = response.content
-        data = convert(data, get_type(key))
+        try:
+            response = requests.get(key)
+            data = response.content
+            data = convert(data, get_type(key))
+        except Exception as e:
+            raise e
 
-        # TODO: Think about how to handle the metadata
+        # Get the metadata
+        if meta_data_key is not None:
+            try:
+                response = requests.get(meta_data_key)
+                meta_data = response.content
+                meta_data = convert(meta_data, dict)
+            except Exception as e:
+                raise e
+        else:
+            meta_data = None
 
-        return data, None
+        return data, meta_data
 
-    async def update_file(self, key: str, data: Any, meta_data: Optional[dict]) -> None:
+    def update_file(self, key: str, data: Any, meta_data: Optional[dict]) -> None:
         pass
 
-    async def delete_file(self, key: str) -> None:
+    def delete_file(self, key: str) -> None:
         pass
 
-    async def list_files_in_directory(self, key: str) -> list:
+    def list_files_in_directory(self, key: str) -> list:
         pass
 
-    async def list_subdirectories_in_directory(self, key) -> list:
+    def list_subdirectories_in_directory(self, key) -> list:
         pass
