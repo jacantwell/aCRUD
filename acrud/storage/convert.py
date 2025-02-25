@@ -1,6 +1,8 @@
 # standard imports
 from typing import Type
 from io import BytesIO
+import os
+from urllib.parse import urlparse
 
 # package imports
 from multimethod import multidispatch
@@ -22,11 +24,36 @@ if SUPPORTS_PICKLE:
     import dill
 
 
-def get_type(file_path: str) -> Type:
+def get_file_path_extension(file_path: str) -> str:
+    """
+    Get the extension of the file path.
+    """
+    return file_path.split(".")[-1]
+
+
+def get_url_extension(url: str) -> str:
+    """
+    Get the extension of the URL.
+    """
+    # Parse the URL to get the path component
+    parsed_url = urlparse(url)
+    # Extract the file path
+    file_path = parsed_url.path
+    # Get just the filename from the path
+    filename = os.path.basename(file_path)
+    # Get the extension without the dot (e.g., "txt")
+    _, extension = os.path.splitext(filename)
+    return extension.replace(".", "")
+
+
+def get_type(key: str) -> Type:
     """
     Get the type of the file based on the file extension.
     """
-    file_type = file_path.split(".")[-1]
+    if key.startswith("http"):
+        file_type = get_url_extension(key)
+    else:
+        file_type = get_file_path_extension(key)
     match file_type:
         case "txt":
             return str

@@ -1,5 +1,5 @@
 from importlib import import_module
-from stringcase import pascalcase
+from stringcase import pascalcase, snakecase
 from typing import Any, Dict
 
 from acrud.storage.base import StorageBase, StorageConfig
@@ -19,10 +19,10 @@ def get_config_from_str(storage_type: str, config: Dict[str, Any]) -> StorageCon
 
 def create_storage(config: StorageConfig) -> StorageBase:
     package = "acrud.storage"
-    storage_type = config.__class__.__name__.replace("StorageConfig", "").lower()
+    storage_type = snakecase(config.__class__.__name__.replace("StorageConfig", ""))
     # Dynamically import the appropriate storage module
     try:
-        module = import_module(package + "." + storage_type, package)
+        module = import_module(package + "." + snakecase(storage_type), package)
         storage_class = getattr(module, f"{pascalcase(storage_type)}Storage")
         return storage_class(config)
     except (ImportError, AttributeError) as e:
